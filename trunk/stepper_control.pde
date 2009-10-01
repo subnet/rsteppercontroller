@@ -1,6 +1,6 @@
-
-long function_duration = 0;
 axis axis_array[3];
+uint8_t stepPins[3] = {
+  STEP_X,STEP_Y,STEP_Z};
 
 void bzero(uint8_t *ptr, uint8_t len) {
   for (uint8_t i=0; i<len; i++) ptr[i] = 0;
@@ -27,96 +27,65 @@ void init_steppers(){
   calculate_deltas();
 }
 
-/*
- a->delta_units = a->target_units - a->current_units;
-    a->delta_steps = to_steps(_units[i], abs(a->delta_units)); //XXX make x_units a vector
-    */
-    
-// compute the ratio of motion for each axis based on longest movement
-void set_stepRatio() {
-int j;
-  float maxstep = max(xaxis->delta_steps,max(yaxis->delta_steps,zaxis->delta_steps));
-  for (int i=0;i<3;i++) {
-    //axis_array[i]->steps_per_masterstep = axis_array[i]->delta_steps / maxstep;
-    //axis_array[i]->incStep = 0;
-    axis_array[i]->steps_per_masterstep = abs(_units[i]/maxstep * (axis_array[i]->target_units - axis_array[i]->current_units));
-    axis_array[i]->incStep = 0;
-    
-j = axis_array[i]->delta_steps;
-Serial.print(j,DEC);
-j = maxstep;
-Serial.print("/");
-Serial.print(j,DEC);
-j = axis_array[i]->steps_per_masterstep*100;
-Serial.print("*100=");
-Serial.println(j,DEC);
+void inline do_step(uint8_t pin){
+  digitalWrite(pin, HIGH);
+  digitalWrite(pin, LOW);
+}
 
+
+//a motion is composed of a number of steps that take place
+//over a length of time.  a slice of time is the total time
+//divided by the number of steps.  We step when the the 
+//timeIntoSlice >= .5*timePerStep.  we don't take 
+//extra steps by keeping track of when we step.  only
+//when the timeIntoSlice becomes a smaller number 
+void dda_move(float feedrate) {
+  long starttime,time,duration;
+  float distance;
+  uint16_t timeIntoSlice;
+  axis a;
+  uint8_t i;
+
+  // distance / feedrate * 60000000.0 = move duration in microseconds
+  distance = sqrt(xaxis->delta_units*xaxis->delta_units + yaxis->delta_units*yaxis->delta_units + zaxis->delta_units*zaxis->delta_units);
+  duration = ((distance * 60000000.0) / feedrate);	
+  
+  // setup axis
+  for (i=0;i<3;i++) {
+    a = axis_array[i];
+    a->timePerStep = duration / axis_array[i]->delta_steps;
+    a->stepped = false;
+    a->oldTimeIntoSlice = 0;
   }
-}
-
-// should this axis move on this round - also do housekeeping
-bool query_pulse(axis a) {
-  if (a->delta_steps == 0) return false;
-  a->incStep += a->steps_per_masterstep;
-  if (a->incStep >= 0.95) {
-    a->incStep--;
-    a->delta_steps--;
-    return true;
-  }  
-  else return false;
-}
-
-void do_steps(uint8_t vector){
-  if (vector & _BV(0)) digitalWrite(STEP_X, HIGH);
-  if (vector & _BV(1)) digitalWrite(STEP_Y, HIGH);
-  if (vector & _BV(2)) digitalWrite(STEP_Z, HIGH);
-  delayMicroseconds(5);
-  if (vector & _BV(0)) digitalWrite(STEP_X, LOW);
-  if (vector & _BV(1)) digitalWrite(STEP_Y, LOW);
-  if (vector & _BV(2)) digitalWrite(STEP_Z, LOW);
-}
-
-
-void dda_move(long micro_delay) {
-  unsigned long starttime;
-  uint8_t action_vector;
-
-  div_t pause = div(micro_delay-function_duration, 1000);
-
-  // Move axis as appropriate
-  set_stepRatio(); //compute data for use by query_pulse()
+  starttime = micros();
+  // start move
   do {
-    starttime = micros();
+    time = micros() - starttime;
+    for (i=0; i<3; i++) {
+      a = axis_array[i];
+      // find out how far into the time segment we are in microsecods 
+      timeIntoSlice = (time%a->timePerStep);
 
-    action_vector = 0;
-    for (int i=0; i<3; i++) {
-      if (query_pulse(axis_array[i])) {
-        action_vector |= _BV(i);
+      // clear the step when we ener a new timeslice
+      if (timeIntoSlice < a->oldTimeIntoSlice) {
+        a->stepped = false;
+      }
+      a->oldTimeIntoSlice = timeIntoSlice;
+
+      //check if we need to step, and step (timeIntoSlice >= timePerStep/2)
+      if (!a->stepped && (timeIntoSlice >= ((a->timePerStep)>>1))) {
+        do_step(stepPins[i]);
+        a->stepped = true;
+        a->delta_steps--;
       }
     }
-    if (action_vector) do_steps(action_vector);
-
-    //delay
-    function_duration = micros() - starttime; //to be subtracted out of delay for subsequent calls of dda_move()
-    if (pause.quot) delay(pause.quot);			
-    if (pause.rem)  delayMicroseconds(pause.rem);
   } 
   while (xaxis->delta_steps || yaxis->delta_steps || zaxis->delta_steps);
-
-  // deal with potential rounding issue (XXX: not sure if there is an exact way to do this)
-  action_vector = 0;
-  if (xaxis->incStep > 0.5) action_vector = _BV(0);
-  if (yaxis->incStep > 0.5) action_vector |= _BV(1);
-  if (zaxis->incStep > 0.5) action_vector |= _BV(2);
-  if (action_vector) do_steps(action_vector);
-  if (pause.quot)    delay(pause.quot);			
-  if (pause.rem)     delayMicroseconds(pause.rem);
 
   //we are at the target
   xaxis->current_units = xaxis->target_units;
   yaxis->current_units = yaxis->target_units;
   zaxis->current_units = zaxis->target_units;
-
   calculate_deltas();
 }
 
@@ -138,7 +107,6 @@ void set_position(FloatPoint *fp){
 long to_steps(float steps_per_unit, float units){
   return steps_per_unit * units;
 }
-
 
 void calculate_deltas() {
   //figure our deltas. 
@@ -164,23 +132,8 @@ void calculate_deltas() {
   }
 }
 
-
-long calculate_feedrate_delay(float feedrate){
-  //how long is our line length?
-  float distance    = sqrt(xaxis->delta_units*xaxis->delta_units + yaxis->delta_units*yaxis->delta_units + zaxis->delta_units*zaxis->delta_units);
-  long master_steps = max(abs(xaxis->delta_steps), max(abs(yaxis->delta_steps), abs(zaxis->delta_steps)));
-
-  //calculate delay between steps in microseconds.  this is sort of tricky, but not too bad.
-  //the formula has been condensed to save space.  here it is in english:
-  // distance / feedrate * 60000000.0 = move duration in microseconds
-  // move duration / master_steps = time between steps for master axis.
-
-  return ((distance * 60000000.0) / feedrate) / master_steps;	
-}
-
-
-long getMaxSpeed(){
-  return (zaxis->delta_steps) ? calculate_feedrate_delay(FAST_Z_FEEDRATE) : calculate_feedrate_delay(FAST_XY_FEEDRATE);
+long getMaxFeedrate(){
+  return (zaxis->delta_steps) ? FAST_Z_FEEDRATE : FAST_XY_FEEDRATE;
 }
 
 

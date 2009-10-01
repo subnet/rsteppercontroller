@@ -1,5 +1,4 @@
 
-
 void myStepper_init(void) {
   //Control Pins
   pinMode(MS1, OUTPUT);
@@ -16,8 +15,6 @@ void myStepper_init(void) {
   pinMode(DIR_Z, OUTPUT);
 
   //set pin values to stop PWM
-  DDRB = 0xFF;
-  PORTB = 0x00;
   digitalWrite(STEP_X, LOW); 
   digitalWrite(STEP_Y, LOW); 
   digitalWrite(STEP_Z, LOW);

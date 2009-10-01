@@ -24,8 +24,9 @@ struct axis_t {
   float target_units;
   float delta_units;
   float delta_steps;
-  float incStep;
-  float steps_per_masterstep;
+  uint16_t timePerStep;
+  uint16_t oldTimeIntoSlice;
+  bool stepped;
   int8_t direction; //FORWARD or BACKWARD
 };
 typedef struct axis_t *axis;
@@ -77,7 +78,7 @@ typedef struct axis_t *axis;
 #define MS1  6
 #define MS2 5
 #define MS3 2
-#define RST 3 //
+#define RST 3 
 #define SLP 3
 #define STEP_X 12
 #define STEP_Y 8
