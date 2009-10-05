@@ -10,6 +10,7 @@ uint8_t command_word[COMMAND_SIZE];
 uint8_t serial_count=0;
 uint8_t no_data = 0;
 uint16_t oldKeys;
+axis axis_array[3];
 
 struct axis_t xaxis_data;
 struct axis_t yaxis_data;
@@ -18,9 +19,6 @@ struct axis_t zaxis_data;
 axis xaxis;
 axis yaxis;
 axis zaxis;
-
-
-
 
 void setup() {
   //serial

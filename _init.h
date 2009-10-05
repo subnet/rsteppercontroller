@@ -20,10 +20,11 @@ struct FloatPoint {
 FloatPoint zeros = {0.0,0.0,0.0};
 
 struct axis_t {
+  uint8_t step_pin;
   float current_units;
   float target_units;
   float delta_units;
-  float delta_steps;
+  uint32_t delta_steps;
   uint16_t timePerStep;
   uint16_t oldTimeIntoSlice;
   bool stepped;
@@ -80,26 +81,18 @@ typedef struct axis_t *axis;
 #define MS3 2
 #define RST 3 
 #define SLP 3
-#define STEP_X 12
-#define STEP_Y 8
-#define STEP_Z 13
-#define DIR_X 11
-#define DIR_Y 9
-#define DIR_Z 10
+#define STEP_X 11
+#define STEP_Y 9
+#define STEP_Z 10
+#define DIR_X 12
+#define DIR_Y 8
+#define DIR_Z 13
 //state machine
 #define full 1
 #define half 2
 #define quarter 3
 #define eighth 4
 #define sixteenth 5
-
-//cartesian bot pins
-#define X_STEP_PIN STEP_X
-#define X_DIR_PIN DIR_X
-#define Y_STEP_PIN STEP_Y
-#define Y_DIR_PIN DIR_Y
-#define Z_STEP_PIN STEP_Z
-#define Z_DIR_PIN DIR_Z
 
 
 
