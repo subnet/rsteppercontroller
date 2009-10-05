@@ -1,6 +1,5 @@
-axis axis_array[3];
-uint8_t stepPins[3] = {
-  STEP_X,STEP_Y,STEP_Z};
+
+
 
 void bzero(uint8_t *ptr, uint8_t len) {
   for (uint8_t i=0; i<len; i++) ptr[i] = 0;
@@ -23,14 +22,15 @@ void init_steppers(){
   bzero((uint8_t*)&yaxis_data, sizeof(struct axis_t)); 
   bzero((uint8_t*)&zaxis_data, sizeof(struct axis_t)); 
 
+  xaxis->step_pin = STEP_X;
+  yaxis->step_pin = STEP_Y;
+  zaxis->step_pin = STEP_Z;
+  
   //figure our stuff.
   calculate_deltas();
 }
 
-void inline do_step(uint8_t pin){
-  digitalWrite(pin, HIGH);
-  digitalWrite(pin, LOW);
-}
+
 
 
 //a motion is composed of a number of steps that take place
@@ -47,9 +47,11 @@ void dda_move(float feedrate) {
   uint8_t i;
 
   // distance / feedrate * 60000000.0 = move duration in microseconds
-  distance = sqrt(xaxis->delta_units*xaxis->delta_units + yaxis->delta_units*yaxis->delta_units + zaxis->delta_units*zaxis->delta_units);
+  distance = sqrt(xaxis->delta_units*xaxis->delta_units + 
+    yaxis->delta_units*yaxis->delta_units + 
+    zaxis->delta_units*zaxis->delta_units);
   duration = ((distance * 60000000.0) / feedrate);	
-  
+
   // setup axis
   for (i=0;i<3;i++) {
     a = axis_array[i];
@@ -59,13 +61,12 @@ void dda_move(float feedrate) {
   }
   starttime = micros();
   // start move
-  do {
+  while (xaxis->delta_steps || yaxis->delta_steps || zaxis->delta_steps) {
     time = micros() - starttime;
     for (i=0; i<3; i++) {
       a = axis_array[i];
       // find out how far into the time segment we are in microsecods 
       timeIntoSlice = (time%a->timePerStep);
-
       // clear the step when we ener a new timeslice
       if (timeIntoSlice < a->oldTimeIntoSlice) {
         a->stepped = false;
@@ -74,13 +75,14 @@ void dda_move(float feedrate) {
 
       //check if we need to step, and step (timeIntoSlice >= timePerStep/2)
       if (!a->stepped && (timeIntoSlice >= ((a->timePerStep)>>1))) {
-        do_step(stepPins[i]);
+        digitalWrite(a->step_pin, HIGH);
+        digitalWrite(a->step_pin, LOW);
         a->stepped = true;
         a->delta_steps--;
       }
     }
-  } 
-  while (xaxis->delta_steps || yaxis->delta_steps || zaxis->delta_steps);
+  }
+
 
   //we are at the target
   xaxis->current_units = xaxis->target_units;
@@ -112,6 +114,7 @@ void calculate_deltas() {
   //figure our deltas. 
   axis a;
   int i;
+
   for (i=0; i<3; i++) {
     a = axis_array[i];
     a->delta_units = a->target_units - a->current_units;
