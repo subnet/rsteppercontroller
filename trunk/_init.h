@@ -93,9 +93,9 @@ typedef struct axis_t *axis;
 // specify min-max sense pins or 0 if not used
 // specify if the pin is to to detect a switch closing when
 // the signal is high using the syntax
-// #define MIN_X 12 | ACTIVE_HIGH;
+// #define MIN_X 12 | ACTIVE_HIGH
 // or to sense a low signal (preferred!!!)
-// #define MIN_Y 13 | ACTIVE_LOW;
+// #define MIN_Y 13 | ACTIVE_LOW
 // active low is prefered as it will cause the AVR to use it's internal pullups to 
 // avoid bounce on the line.  If you want active_high, then you must add external pulldowns
 // to avoid false signals.
