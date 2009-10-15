@@ -21,6 +21,8 @@ FloatPoint zeros = {0.0,0.0,0.0};
 
 struct axis_t {
   uint8_t step_pin;
+  uint8_t min_pin;
+  uint8_t max_pin;
   float current_units;
   float target_units;
   float delta_units;
@@ -87,12 +89,32 @@ typedef struct axis_t *axis;
 #define DIR_X 12
 #define DIR_Y 8
 #define DIR_Z 13
+
+// specify min-max sense pins or 0 if not used
+// specify if the pin is to to detect a switch closing when
+// the signal is high using the syntax
+// #define MIN_X 12 | ACTIVE_HIGH;
+// or to sense a low signal (preferred!!!)
+// #define MIN_Y 13 | ACTIVE_LOW;
+// active low is prefered as it will cause the AVR to use it's internal pullups to 
+// avoid bounce on the line.  If you want active_high, then you must add external pulldowns
+// to avoid false signals.
+#define ACTIVE_HIGH _BV(7)
+#define ACTIVE_LOW  _BV(6)
+#define MIN_X 0
+#define MAX_X 0
+#define MIN_Y 0
+#define MAX_Y 0
+#define MIN_Z 0
+#define MAX_Z 0
+
 //state machine
 #define full 1
 #define half 2
 #define quarter 3
 #define eighth 4
 #define sixteenth 5
+
 
 
 
