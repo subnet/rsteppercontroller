@@ -13,6 +13,14 @@ void myStepper_init(void) {
   pinMode(DIR_X, OUTPUT); 
   pinMode(DIR_Y, OUTPUT); 
   pinMode(DIR_Z, OUTPUT);
+  
+  //deal with limit switches
+  limitConfig(MIN_X);
+  limitConfig(MAX_X);
+  limitConfig(MIN_Y);
+  limitConfig(MAX_Y);
+  limitConfig(MIN_Z);
+  limitConfig(MAX_Z);
 
   //set pin values to stop PWM
   digitalWrite(STEP_X, LOW); 
@@ -27,6 +35,28 @@ void myStepper_init(void) {
   setStep(full);
   myStepper_reset();
 }
+
+/* configure limit switches */
+void limitConfig(uint8_t pin) {
+  uint8_t p;
+  p = (pin & ~(ACTIVE_HIGH | ACTIVE_LOW));
+  if (p) pinMode(p, INPUT); //set to input if it's to be used
+  if (pin & ACTIVE_LOW) digitalWrite(p, HIGH); //turn on internal pullup if sensing active high
+  else digitalWrite(p, LOW); // turn off pullup
+}
+
+/* if limit switches are used, detect if they are activated*/
+bool can_move(axis a) {
+  uint8_t p;
+  p = (a->min_pin & ~(ACTIVE_HIGH | ACTIVE_LOW));
+  if ((a->min_pin & ACTIVE_HIGH) && digitalRead(p)) return false;
+  if ((a->min_pin & ACTIVE_LOW)  &&!digitalRead(p)) return false;
+  p = (a->max_pin & ~(ACTIVE_HIGH | ACTIVE_LOW));
+  if ((a->max_pin & ACTIVE_HIGH) && digitalRead(p)) return false;
+  if ((a->max_pin & ACTIVE_LOW)  &&!digitalRead(p)) return false;
+  return true;
+}
+  
 
 void setStep(uint8_t s) {
   switch (s) {

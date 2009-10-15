@@ -25,7 +25,7 @@ void setup() {
   Serial.begin(9600);
  
   //my init code
-  keypad_init();
+//  keypad_init();
   myStepper_init();
 
   //reprap init code
@@ -62,6 +62,7 @@ void loop() {
     init_process_string(); //clear
   }
 
+/*
   //keypad actions
   newKeys = keypad_scan();
   if (newKeys != oldKeys) {
@@ -87,6 +88,7 @@ void loop() {
         break;
     }
   }
+*/
 
   //no data?  turn off steppers
   if (no_data > 1000)  disable_steppers();

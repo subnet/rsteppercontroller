@@ -22,9 +22,16 @@ void init_steppers(){
   bzero((uint8_t*)&yaxis_data, sizeof(struct axis_t)); 
   bzero((uint8_t*)&zaxis_data, sizeof(struct axis_t)); 
 
+  // configure pins
   xaxis->step_pin = STEP_X;
   yaxis->step_pin = STEP_Y;
   zaxis->step_pin = STEP_Z;
+  xaxis->min_pin  = MIN_X;
+  yaxis->min_pin  = MIN_Y;
+  zaxis->min_pin  = MIN_Z;
+  xaxis->max_pin  = MAX_X;
+  yaxis->max_pin  = MAX_Y;
+  zaxis->max_pin  = MAX_Z;
   
   //figure our stuff.
   calculate_deltas();
@@ -75,8 +82,10 @@ void dda_move(float feedrate) {
 
       //check if we need to step, and step (timeIntoSlice >= timePerStep/2)
       if (!a->stepped && (timeIntoSlice >= ((a->timePerStep)>>1))) {
-        digitalWrite(a->step_pin, HIGH);
-        digitalWrite(a->step_pin, LOW);
+        if (can_move(a)) {
+          digitalWrite(a->step_pin, HIGH);
+          digitalWrite(a->step_pin, LOW);
+        }
         a->stepped = true;
         a->delta_steps--;
       }
