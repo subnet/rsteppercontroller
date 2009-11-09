@@ -5,10 +5,10 @@
 #include <stdlib.h>
 
 
-bool    abs_mode = true;   //0 = incremental; 1 = absolute
+bool    abs_mode = false;   //0 = incremental; 1 = absolute
 uint8_t command_word[COMMAND_SIZE];
 uint8_t serial_count=0;
-uint8_t no_data = 0;
+uint16_t no_data = 0;
 uint16_t oldKeys;
 axis axis_array[3];
 
@@ -91,7 +91,9 @@ void loop() {
 */
 
   //no data?  turn off steppers
-  if (no_data > 1000)  disable_steppers();
+  if (no_data > 1000)  {
+    disable_steppers();
+  }
 }
 //foo
 

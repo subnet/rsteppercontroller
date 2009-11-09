@@ -2,7 +2,8 @@
 
 
 //steps per inch or mm
-float _units[3] = {X_STEPS_PER_INCH,Y_STEPS_PER_INCH,Z_STEPS_PER_INCH};
+float _units[3] = {
+  X_STEPS_PER_INCH,Y_STEPS_PER_INCH,Z_STEPS_PER_INCH};
 float curve_section = CURVE_SECTION_INCHES;
 
 //our feedrate variables.
@@ -22,18 +23,20 @@ void process_string(uint8_t  *instruction) {
   uint8_t code;
   //command commands = NULL;
   FloatPoint fp;
-  
+
+
   //the character / means delete block... used for comments and stuff.
   if (instruction[0] == '/') 	{
     Serial.println("ok");
     return;
   }
+
   enable_steppers();
   purge_commands(); //clear old commands
   parse_commands(instruction); //create linked list of arguments
   if (command_exists('G')) {
     code = getValue('G');
-    
+
     switch(code) {
     case 0: //Rapid Motion
     case 1: //Coordinated Motion
@@ -44,6 +47,8 @@ void process_string(uint8_t  *instruction) {
       if (code == 1 && command_exists('F') && ((feedrate = getValue('F')) > 0)) feedrate_micros = feedrate;
       else feedrate_micros = getMaxFeedrate();
       //Move.
+
+
       dda_move(feedrate_micros);
       break;
     case 2://Clockwise arc
@@ -149,4 +154,5 @@ void process_string(uint8_t  *instruction) {
   }
   Serial.println("ok");//tell our host we're done.
 }
+
 

@@ -1,3 +1,5 @@
+/*
+
 uint8_t COLUMN[3] = {16,14,17};
 uint8_t ROW[4]    = {15,19,18,4};
 
@@ -28,3 +30,5 @@ uint16_t keypad_scan() {
   }
   return out;
 }
+
+*/
