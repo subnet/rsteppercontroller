@@ -28,8 +28,7 @@ struct axis_t {
   float delta_units;
   uint32_t delta_steps;
   uint16_t timePerStep;
-  uint16_t oldTimeIntoSlice;
-  bool stepped;
+  uint32_t stepCount;
   int8_t direction; //FORWARD or BACKWARD
 };
 typedef struct axis_t *axis;
