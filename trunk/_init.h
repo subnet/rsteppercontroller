@@ -44,8 +44,8 @@ typedef struct axis_t *axis;
 #define debug(x) Serial.println(x)
 #define debug2(x,y) Serial.print(x);Serial.println(y)
 #define debug3(x,y,z) Serial.print(x);Serial.println(y,z)
-#define disable_steppers() digitalWrite(ENABLE, LOW)
-#define enable_steppers()  digitalWrite(ENABLE, HIGH);delay(500);
+#define disable_steppers() digitalWrite(ENABLE, HIGH)
+#define enable_steppers()  digitalWrite(ENABLE, LOW)
 
 
 

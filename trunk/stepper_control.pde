@@ -52,6 +52,10 @@ void dda_move(float feedrate) {
   uint16_t timeIntoSlice;
   axis a;
   uint8_t i;
+  uint8_t oldSREG;
+  
+
+Serial.println("dda_move()");
 
   // distance / feedrate * 60000000.0 = move duration in microseconds
   distance = sqrt(xaxis->delta_units*xaxis->delta_units + 
@@ -62,7 +66,9 @@ void dda_move(float feedrate) {
   // setup axis
   for (i=0;i<3;i++) {
     a = axis_array[i];
+    if (!axis_array[i]->delta_steps) continue; //skip if no steps required
     a->timePerStep = duration / axis_array[i]->delta_steps;
+Serial.println(a->timePerStep, DEC);
     a->stepped = false;
     a->oldTimeIntoSlice = 0;
   }
@@ -70,8 +76,11 @@ void dda_move(float feedrate) {
   // start move
   while (xaxis->delta_steps || yaxis->delta_steps || zaxis->delta_steps) {
     time = micros() - starttime;
+digitalWrite(STEP_Z, HIGH);
+digitalWrite(STEP_Z, LOW);
     for (i=0; i<3; i++) {
       a = axis_array[i];
+      if (!a->delta_steps) continue; //skip if no steps required
       // find out how far into the time segment we are in microsecods 
       timeIntoSlice = (time%a->timePerStep);
       // clear the step when we ener a new timeslice
@@ -98,6 +107,8 @@ void dda_move(float feedrate) {
   yaxis->current_units = yaxis->target_units;
   zaxis->current_units = zaxis->target_units;
   calculate_deltas();
+  
+  Serial.println("DDA_move finished");
 }
 
 void set_target(FloatPoint *fp){
