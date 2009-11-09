@@ -48,11 +48,10 @@ void init_steppers(){
 //when the timeIntoSlice becomes a smaller number 
 void dda_move(float feedrate) {
   long starttime,time,duration;
+  uint32_t desiredStepCount;
   float distance;
-  uint16_t timeIntoSlice;
   axis a;
   uint8_t i;
-  uint8_t oldSREG;
   
 
 Serial.println("dda_move()");
@@ -68,34 +67,26 @@ Serial.println("dda_move()");
     a = axis_array[i];
     if (!axis_array[i]->delta_steps) continue; //skip if no steps required
     a->timePerStep = duration / axis_array[i]->delta_steps;
+    a->stepCount = 0;
 Serial.println(a->timePerStep, DEC);
-    a->stepped = false;
-    a->oldTimeIntoSlice = 0;
   }
+  
   starttime = micros();
   // start move
   while (xaxis->delta_steps || yaxis->delta_steps || zaxis->delta_steps) {
-    time = micros() - starttime;
-digitalWrite(STEP_Z, HIGH);
-digitalWrite(STEP_Z, LOW);
+    time = micros() - starttime + 10 /*trigger if w/in 10uS of desired time*/;
     for (i=0; i<3; i++) {
       a = axis_array[i];
       if (!a->delta_steps) continue; //skip if no steps required
-      // find out how far into the time segment we are in microsecods 
-      timeIntoSlice = (time%a->timePerStep);
-      // clear the step when we ener a new timeslice
-      if (timeIntoSlice < a->oldTimeIntoSlice) {
-        a->stepped = false;
-      }
-      a->oldTimeIntoSlice = timeIntoSlice;
-
-      //check if we need to step, and step (timeIntoSlice >= timePerStep/2)
-      if (!a->stepped && (timeIntoSlice >= ((a->timePerStep)>>1))) {
+      //where should we be (integer math)
+      desiredStepCount = 1 + ((2*time) / a->timePerStep);
+      desiredStepCount >>= 1;
+      if (desiredStepCount > a->stepCount) {
         if (can_move(a)) {
+          a->stepCount++;
           digitalWrite(a->step_pin, HIGH);
           digitalWrite(a->step_pin, LOW);
         }
-        a->stepped = true;
         a->delta_steps--;
       }
     }
