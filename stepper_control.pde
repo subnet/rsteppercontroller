@@ -26,35 +26,42 @@ void init_steppers(){
   xaxis->step_pin = STEP_X;
   yaxis->step_pin = STEP_Y;
   zaxis->step_pin = STEP_Z;
+
   xaxis->min_pin  = MIN_X;
   yaxis->min_pin  = MIN_Y;
   zaxis->min_pin  = MIN_Z;
+
   xaxis->max_pin  = MAX_X;
   yaxis->max_pin  = MAX_Y;
   zaxis->max_pin  = MAX_Z;
-  
+
+  xaxis->direct_step_pin = _STEP_X;
+  yaxis->direct_step_pin = _STEP_Y;
+  zaxis->direct_step_pin = _STEP_Z;
+
   //figure our stuff.
   calculate_deltas();
 }
 
 
+axis nextEvent(void) {
+  if (xaxis->nextEvent < yaxis->nextEvent) {
+    return (xaxis->nextEvent <= zaxis->nextEvent) ? xaxis : zaxis;
+  } 
+  else {
+    return (yaxis->nextEvent <= zaxis->nextEvent) ? yaxis : zaxis;
+  }
+}
 
-
-//a motion is composed of a number of steps that take place
-//over a length of time.  a slice of time is the total time
-//divided by the number of steps.  We step when the the 
-//timeIntoSlice >= .5*timePerStep.  we don't take 
-//extra steps by keeping track of when we step.  only
-//when the timeIntoSlice becomes a smaller number 
 void dda_move(float feedrate) {
-  long starttime,time,duration;
-  uint32_t desiredStepCount;
+  uint32_t starttime,duration;
   float distance;
   axis a;
   uint8_t i;
-  
 
-Serial.println("dda_move()");
+  //uint8_t sreg = intDisable();
+
+  //Serial.println("dda_move()");
 
   // distance / feedrate * 60000000.0 = move duration in microseconds
   distance = sqrt(xaxis->delta_units*xaxis->delta_units + 
@@ -67,39 +74,45 @@ Serial.println("dda_move()");
     a = axis_array[i];
     if (!axis_array[i]->delta_steps) continue; //skip if no steps required
     a->timePerStep = duration / axis_array[i]->delta_steps;
-    a->stepCount = 0;
-Serial.println(a->timePerStep, DEC);
-  }
-  
-  starttime = micros();
-  // start move
-  while (xaxis->delta_steps || yaxis->delta_steps || zaxis->delta_steps) {
-    time = micros() - starttime + 10 /*trigger if w/in 10uS of desired time*/;
-    for (i=0; i<3; i++) {
-      a = axis_array[i];
-      if (!a->delta_steps) continue; //skip if no steps required
-      //where should we be (integer math)
-      desiredStepCount = 1 + ((2*time) / a->timePerStep);
-      desiredStepCount >>= 1;
-      if (desiredStepCount > a->stepCount) {
-        if (can_move(a)) {
-          a->stepCount++;
-          digitalWrite(a->step_pin, HIGH);
-          digitalWrite(a->step_pin, LOW);
-        }
-        a->delta_steps--;
-      }
-    }
+    //Serial.println(a->timePerStep, DEC);
   }
 
+  // determine when the next event will take place
+  starttime = micros();
+  for (i=0; i<3; i++) {
+    a = axis_array[i];
+    if (a->delta_steps) {
+      a->nextEvent = a->timePerStep;
+    } else {
+      a->nextEvent = 0xFFFFFFF;
+    }
+  }
+  // start move
+  while (xaxis->delta_steps || yaxis->delta_steps || zaxis->delta_steps) {
+    a = nextEvent();
+    while (micros() < (starttime + a->nextEvent) ); //wait till next action is required
+    if (can_move(a)) {
+      _STEP_PORT |= a->direct_step_pin;
+      //need to wait 1uS
+      __asm__("nop\n\t""nop\n\t""nop\n\t""nop\n\t""nop\n\t""nop\n\t");
+      __asm__("nop\n\t""nop\n\t""nop\n\t""nop\n\t""nop\n\t""nop\n\t""nop\n\t");
+      _STEP_PORT &= ~a->direct_step_pin;
+    }
+    if (--a->delta_steps) {
+      a->nextEvent += a->timePerStep;
+    } else {
+      a->nextEvent = 0xFFFFFFFF; 
+    }
+  }
 
   //we are at the target
   xaxis->current_units = xaxis->target_units;
   yaxis->current_units = yaxis->target_units;
   zaxis->current_units = zaxis->target_units;
   calculate_deltas();
-  
-  Serial.println("DDA_move finished");
+
+  //Serial.println("DDA_move finished");
+  //intRestore(sreg);
 }
 
 void set_target(FloatPoint *fp){
@@ -149,5 +162,6 @@ void calculate_deltas() {
 long getMaxFeedrate(){
   return (zaxis->delta_steps) ? FAST_Z_FEEDRATE : FAST_XY_FEEDRATE;
 }
+
 
 

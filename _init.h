@@ -21,6 +21,7 @@ FloatPoint zeros = {0.0,0.0,0.0};
 
 struct axis_t {
   uint8_t step_pin;
+  uint8_t direct_step_pin;
   uint8_t min_pin;
   uint8_t max_pin;
   float current_units;
@@ -28,8 +29,8 @@ struct axis_t {
   float delta_units;
   uint32_t delta_steps;
   uint16_t timePerStep;
-  uint32_t stepCount;
   int8_t direction; //FORWARD or BACKWARD
+  uint32_t nextEvent;
 };
 typedef struct axis_t *axis;
 
@@ -45,7 +46,8 @@ typedef struct axis_t *axis;
 #define debug3(x,y,z) Serial.print(x);Serial.println(y,z)
 #define disable_steppers() digitalWrite(ENABLE, HIGH)
 #define enable_steppers()  digitalWrite(ENABLE, LOW)
-
+#define intDisable()      ({ uint8_t sreg = SREG; cli(); sreg; })
+#define intRestore(sreg)  SREG = sreg 
 
 
 // define the parameters of our machine.
@@ -62,7 +64,7 @@ typedef struct axis_t *axis;
 #define Z_MOTOR_STEPS    400
 
 //our maximum feedrates
-#define FAST_XY_FEEDRATE 1000.0
+#define FAST_XY_FEEDRATE 400.0
 #define FAST_Z_FEEDRATE  50.0
 
 // Units in curve section
@@ -89,6 +91,13 @@ typedef struct axis_t *axis;
 #define DIR_Y 8
 #define DIR_Z 13
 
+#define _STEP_PORT PORTB
+#define _STEP_DDR  DDRB
+#define _STEP_X    (1<<3)
+#define _STEP_Y    (1<<1)
+#define _STEP_Z    (1<<2)
+
+
 // specify min-max sense pins or 0 if not used
 // specify if the pin is to to detect a switch closing when
 // the signal is high using the syntax
@@ -106,6 +115,7 @@ typedef struct axis_t *axis;
 #define MAX_Y 0
 #define MIN_Z 0
 #define MAX_Z 0
+
 
 //state machine
 #define full 1
