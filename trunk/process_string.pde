@@ -47,8 +47,6 @@ void process_string(uint8_t  *instruction) {
       if (code == 1 && command_exists('F') && ((feedrate = getValue('F')) > 0)) feedrate_micros = feedrate;
       else feedrate_micros = getMaxFeedrate();
       //Move.
-
-
       dda_move(feedrate_micros);
       break;
     case 2://Clockwise arc

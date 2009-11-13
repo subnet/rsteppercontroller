@@ -57,7 +57,7 @@ void loop() {
 
   //if theres a pause or we got a real command, do it
   if (serial_count && (c == '\n' || no_data > 100)) {
-    command_word[serial_count-1] = 0; //change \n to null terminator
+    command_word[serial_count] = 0; //change \n to null terminator
     process_string(command_word); //do
     init_process_string(); //clear
   }
