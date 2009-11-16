@@ -27,7 +27,8 @@ void setup() {
   //my init code
 //  keypad_init();
   myStepper_init();
-
+  motor_init();
+  
   //reprap init code
   init_steppers();
   init_process_string();

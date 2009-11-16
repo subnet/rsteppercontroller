@@ -9,6 +9,7 @@ float curve_section = CURVE_SECTION_INCHES;
 //our feedrate variables.
 float feedrate = 0.0;
 long feedrate_micros = 0;
+uint8_t stepping = DEFAULT_STEP;
 
 
 void setXYZ(FloatPoint *fp) {
@@ -150,7 +151,32 @@ void process_string(uint8_t  *instruction) {
       Serial.println(code,DEC);
     }
   }
+  if (command_exists('M')) {
+    code = getValue('M');
+    switch(code) {
+    case 0: //M0 turn off motor
+      motor_off();
+      break;
+    case 1: //M1 turn on motor
+      motor_on();
+      break;
+    case 10: //M10 S{1,2,4,8,16} -- set stepping mode
+      if (command_exists('S')) {
+        code = getValue('S');
+        if (code == 1 || code == 2 || code == 4 || code == 8 || code == 16) {
+          stepping = code;
+          setStep(stepping);
+          break;
+        }
+      }
+    default:
+      Serial.print("huh? M");
+      Serial.println(code,DEC);
+    }
+  }
   Serial.println("ok");//tell our host we're done.
 }
+
+
 
 
