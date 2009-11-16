@@ -49,27 +49,37 @@ typedef struct axis_t *axis;
 #define intDisable()      ({ uint8_t sreg = SREG; cli(); sreg; })
 #define intRestore(sreg)  SREG = sreg 
 
+//#define X_STEPS_PER_INCH 416.772354
+//#define X_STEPS_PER_MM   16.4083604
 
 // define the parameters of our machine.
-#define X_STEPS_PER_INCH 416.772354
-#define X_STEPS_PER_MM   16.4083604
-#define X_MOTOR_STEPS    400
+#define X_STEPS_PER_INCH 2000
+#define X_STEPS_PER_MM   78.74015
 
-#define Y_STEPS_PER_INCH 416.772354
-#define Y_STEPS_PER_MM   16.4083604
-#define Y_MOTOR_STEPS    400
+#define Y_STEPS_PER_INCH 4000
+#define Y_STEPS_PER_MM   157.48031
 
-#define Z_STEPS_PER_INCH 416.772354
-#define Z_STEPS_PER_MM   16.4083604
-#define Z_MOTOR_STEPS    400
+#define Z_STEPS_PER_INCH 2395.2095
+#define Z_STEPS_PER_MM   94.299958
 
 //our maximum feedrates
-#define FAST_XY_FEEDRATE 400.0
-#define FAST_Z_FEEDRATE  50.0
+#define FAST_XY_FEEDRATE 11.0
+#define FAST_Z_FEEDRATE  11.0
 
 // Units in curve section
 #define CURVE_SECTION_INCHES 0.019685
 #define CURVE_SECTION_MM 0.5
+
+//default stepper mode
+#define DEFAULT_STEP sixteenth
+
+//available stepper modes
+#define full 1
+#define half 2
+#define quarter 4
+#define eighth 8
+#define sixteenth 16
+
 
 
 
@@ -90,7 +100,10 @@ typedef struct axis_t *axis;
 #define DIR_X 12
 #define DIR_Y 8
 #define DIR_Z 13
+#define MOTOR_PIN 4
 
+/* specify the port and pin numbers - you need to look this up 
+** on the schematic for the particular arduino */
 #define _STEP_PORT PORTB
 #define _STEP_DDR  DDRB
 #define _STEP_X    (1<<3)
@@ -115,14 +128,6 @@ typedef struct axis_t *axis;
 #define MAX_Y 0
 #define MIN_Z 0
 #define MAX_Z 0
-
-
-//state machine
-#define full 1
-#define half 2
-#define quarter 3
-#define eighth 4
-#define sixteenth 5
 
 
 

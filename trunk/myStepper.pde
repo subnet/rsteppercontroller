@@ -32,7 +32,7 @@ void myStepper_init(void) {
 
   //reset and leave on but dissabled
   disable_steppers(); 
-  setStep(full);
+  setStep(DEFAULT_STEP);
   myStepper_reset();
 }
 
@@ -59,6 +59,8 @@ bool can_move(axis a) {
   
 
 void setStep(uint8_t s) {
+  Serial.print("SetStep: ");
+  Serial.println(s,DEC);
   switch (s) {
   case full:
     digitalWrite(MS1, LOW); 

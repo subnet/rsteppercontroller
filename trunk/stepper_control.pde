@@ -61,32 +61,25 @@ void dda_move(float feedrate) {
 
   //uint8_t sreg = intDisable();
 
-  //Serial.println("dda_move()");
-
   // distance / feedrate * 60000000.0 = move duration in microseconds
   distance = sqrt(xaxis->delta_units*xaxis->delta_units + 
     yaxis->delta_units*yaxis->delta_units + 
     zaxis->delta_units*zaxis->delta_units);
-  duration = ((distance * 60000000.0) / feedrate);	
+  duration = ((distance * 60000000.0) / feedrate); //in uS
 
   // setup axis
   for (i=0;i<3;i++) {
     a = axis_array[i];
-    if (!axis_array[i]->delta_steps) continue; //skip if no steps required
-    a->timePerStep = duration / axis_array[i]->delta_steps;
-    //Serial.println(a->timePerStep, DEC);
-  }
-
-  // determine when the next event will take place
-  starttime = micros();
-  for (i=0; i<3; i++) {
-    a = axis_array[i];
-    if (a->delta_steps) {
-      a->nextEvent = a->timePerStep;
+    if (axis_array[i]->delta_steps) {
+      a->timePerStep = duration / axis_array[i]->delta_steps;
+      a->nextEvent = (a->timePerStep>>1); //1st event happens halfway though cycle.
     } else {
-      a->nextEvent = 0xFFFFFFF;
+      a->nextEvent = 0xFFFFFFFF;
     }
   }
+
+  starttime = micros();
+  
   // start move
   while (xaxis->delta_steps || yaxis->delta_steps || zaxis->delta_steps) {
     a = nextEvent();
@@ -131,7 +124,7 @@ void set_position(FloatPoint *fp){
 
 
 long to_steps(float steps_per_unit, float units){
-  return steps_per_unit * units;
+  return steps_per_unit * units * stepping;
 }
 
 void calculate_deltas() {
