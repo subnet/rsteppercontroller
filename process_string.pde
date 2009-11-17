@@ -9,13 +9,13 @@ float curve_section = CURVE_SECTION_INCHES;
 //our feedrate variables.
 float feedrate = 0.0;
 long feedrate_micros = 0;
-uint8_t stepping = DEFAULT_STEP;
+
 
 
 void setXYZ(FloatPoint *fp) {
-  fp->x = getValue('X') + ((abs_mode) ? 0 : xaxis->current_units); 
-  fp->y = getValue('Y') + ((abs_mode) ? 0 : yaxis->current_units);
-  fp->z = getValue('Z') + ((abs_mode) ? 0 : zaxis->current_units);
+  fp->x = (command_exists('X')) ? (getValue('X') + ((abs_mode) ? 0 : xaxis->current_units)) :   xaxis->current_units;
+  fp->y = (command_exists('Y')) ? (getValue('Y') + ((abs_mode) ? 0 : yaxis->current_units)) :   yaxis->current_units;
+  fp->z = (command_exists('Z')) ? (getValue('Z') + ((abs_mode) ? 0 : zaxis->current_units)) :   zaxis->current_units;
 }
 
 
@@ -154,13 +154,14 @@ void process_string(uint8_t  *instruction) {
   if (command_exists('M')) {
     code = getValue('M');
     switch(code) {
-    case 0: //M0 turn off motor
-      motor_off();
-      break;
-    case 1: //M1 turn on motor
+    case 3: // turn on motor
+    case 4:
       motor_on();
       break;
-    case 10: //M10 S{1,2,4,8,16} -- set stepping mode
+    case 5: // turn off motor
+      motor_off();
+      break;
+    case 99: //M99 S{1,2,4,8,16} -- set stepping mode
       if (command_exists('S')) {
         code = getValue('S');
         if (code == 1 || code == 2 || code == 4 || code == 8 || code == 16) {
@@ -176,6 +177,7 @@ void process_string(uint8_t  *instruction) {
   }
   Serial.println("ok");//tell our host we're done.
 }
+
 
 
 

@@ -59,8 +59,6 @@ bool can_move(axis a) {
   
 
 void setStep(uint8_t s) {
-  Serial.print("SetStep: ");
-  Serial.println(s,DEC);
   switch (s) {
   case full:
     digitalWrite(MS1, LOW); 
