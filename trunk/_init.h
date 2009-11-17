@@ -66,6 +66,7 @@ typedef struct axis_t *axis;
 #define FAST_XY_FEEDRATE 11.0
 #define FAST_Z_FEEDRATE  11.0
 
+
 // Units in curve section
 #define CURVE_SECTION_INCHES 0.019685
 #define CURVE_SECTION_MM 0.5

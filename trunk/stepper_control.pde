@@ -59,6 +59,10 @@ void dda_move(float feedrate) {
   axis a;
   uint8_t i;
 
+  // do not exceed maximum feedrate
+  //if (feedrate > getMaxFeedrate()) feedrate = getMaxFeedrate();
+feedrate = getMaxFeedrate(); //XXX
+  
   //uint8_t sreg = intDisable();
 
   // distance / feedrate * 60000000.0 = move duration in microseconds
@@ -79,7 +83,6 @@ void dda_move(float feedrate) {
   }
 
   starttime = micros();
-  
   // start move
   while (xaxis->delta_steps || yaxis->delta_steps || zaxis->delta_steps) {
     a = nextEvent();
@@ -140,20 +143,24 @@ void calculate_deltas() {
 
     switch(i) {
     case 0: 
-      digitalWrite(DIR_X, (a->direction==FORWARD) ? HIGH : LOW); 
+        digitalWrite(DIR_X, (a->direction==FORWARD) ? LOW : HIGH); 
       break;
     case 1: 
-      digitalWrite(DIR_Y, (a->direction==FORWARD) ? HIGH : LOW); 
+      digitalWrite(DIR_Y, (a->direction==FORWARD) ? LOW : HIGH); 
       break;
     case 2: 
-      digitalWrite(DIR_Z, (a->direction==FORWARD) ? HIGH : LOW); 
+      digitalWrite(DIR_Z, (a->direction==FORWARD) ? LOW : HIGH); 
       break;
     }
   }
 }
 
-long getMaxFeedrate(){
-  return (zaxis->delta_steps) ? FAST_Z_FEEDRATE : FAST_XY_FEEDRATE;
+long getMaxFeedrate() {
+  if (_units[0] == X_STEPS_PER_MM) {
+    return (zaxis->delta_steps) ? (FAST_Z_FEEDRATE*25.4) : (FAST_XY_FEEDRATE*25.4); //mm per second
+  } else {
+    return (zaxis->delta_steps) ? FAST_Z_FEEDRATE : FAST_XY_FEEDRATE; //inches per minute
+  }
 }
 
 

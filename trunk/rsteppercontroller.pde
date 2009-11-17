@@ -5,7 +5,8 @@
 #include <stdlib.h>
 
 
-bool    abs_mode = false;   //0 = incremental; 1 = absolute
+bool    abs_mode = true;   //0 = incremental; 1 = absolute
+uint8_t stepping = DEFAULT_STEP;
 uint8_t command_word[COMMAND_SIZE];
 uint8_t serial_count=0;
 uint16_t no_data = 0;
