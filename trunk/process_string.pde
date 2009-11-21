@@ -19,9 +19,11 @@ void setXYZ(FloatPoint *fp) {
 }
 
 
+
 //Read the string and execute instructions
 void process_string(uint8_t  *instruction) {
   uint8_t code;
+  float temp;
   //command commands = NULL;
   FloatPoint fp;
 
@@ -50,6 +52,22 @@ void process_string(uint8_t  *instruction) {
       //Move.
       dda_move(feedrate_micros);
       break;
+    case 81: // drilling operation
+      temp = zaxis->current_units;
+      //Move only in the XY direction
+      setXYZ(&fp);
+      set_target(&fp);
+      zaxis->target_units = temp;
+      calculate_deltas();
+      dda_move(getMaxFeedrate());
+      //Drill DOWN
+      zaxis->target_units = getValue('Z') + ((abs_mode) ? 0 : zaxis->current_units);
+      calculate_deltas();
+      dda_move(getMaxFeedrate());
+      //Drill UP
+      zaxis->target_units = temp;
+      calculate_deltas();
+      dda_move(getMaxFeedrate());
     case 2://Clockwise arc
     case 3://Counterclockwise arc
       FloatPoint cent;
