@@ -63,9 +63,9 @@ typedef struct axis_t *axis;
 #define Z_STEPS_PER_MM   94.299958
 
 //our maximum feedrates
-#define FAST_XY_FEEDRATE 11.0
-#define FAST_Z_FEEDRATE  11.0
-
+#define MAX_X_FEEDRATE 25.0
+#define MAX_Y_FEEDRATE 11.0
+#define MAX_Z_FEEDRATE 16.0
 
 // Units in curve section
 #define CURVE_SECTION_INCHES 0.019685

@@ -13,9 +13,12 @@ long feedrate_micros = 0;
 
 
 void setXYZ(FloatPoint *fp) {
-  fp->x = (command_exists('X')) ? (getValue('X') + ((abs_mode) ? 0 : xaxis->current_units)) :   xaxis->current_units;
-  fp->y = (command_exists('Y')) ? (getValue('Y') + ((abs_mode) ? 0 : yaxis->current_units)) :   yaxis->current_units;
-  fp->z = (command_exists('Z')) ? (getValue('Z') + ((abs_mode) ? 0 : zaxis->current_units)) :   zaxis->current_units;
+  fp->x = (command_exists('X')) ? (getValue('X') + ((abs_mode) ? 0 : xaxis->current_units)) :   
+  xaxis->current_units;
+  fp->y = (command_exists('Y')) ? (getValue('Y') + ((abs_mode) ? 0 : yaxis->current_units)) :   
+  yaxis->current_units;
+  fp->z = (command_exists('Z')) ? (getValue('Z') + ((abs_mode) ? 0 : zaxis->current_units)) :   
+  zaxis->current_units;
 }
 
 
@@ -42,32 +45,15 @@ void process_string(uint8_t  *instruction) {
 
     switch(code) {
     case 0: //Rapid Motion
-    case 1: //Coordinated Motion
-      //Set Target
       setXYZ(&fp);
       set_target(&fp);
-      //Set Speed
-      if (code == 1 && command_exists('F') && ((feedrate = getValue('F')) > 0)) feedrate_micros = feedrate;
-      else feedrate_micros = getMaxFeedrate();
-      //Move.
-      dda_move(feedrate_micros);
+      r_move(0); //fast motion in all axis
       break;
-    case 81: // drilling operation
-      temp = zaxis->current_units;
-      //Move only in the XY direction
+    case 1: //Coordinated Motion
       setXYZ(&fp);
       set_target(&fp);
-      zaxis->target_units = temp;
-      calculate_deltas();
-      dda_move(getMaxFeedrate());
-      //Drill DOWN
-      zaxis->target_units = getValue('Z') + ((abs_mode) ? 0 : zaxis->current_units);
-      calculate_deltas();
-      dda_move(getMaxFeedrate());
-      //Drill UP
-      zaxis->target_units = temp;
-      calculate_deltas();
-      dda_move(getMaxFeedrate());
+      r_move( (command_exists('F')) ? getValue('F') : getMaxFeedrate());
+      break;
     case 2://Clockwise arc
     case 3://Counterclockwise arc
       FloatPoint cent;
@@ -116,7 +102,7 @@ void process_string(uint8_t  *instruction) {
         feedrate_micros = (feedrate > 0) ? feedrate : getMaxFeedrate();
 
         // Make step
-        dda_move(feedrate_micros);
+        r_move(feedrate_micros);
       }
 
       break;
@@ -139,18 +125,34 @@ void process_string(uint8_t  *instruction) {
       break;
     case 28: //go home.
       set_target(&zeros);
-      dda_move(getMaxFeedrate());
+      r_move(getMaxFeedrate());
       break;
     case 30://go home via an intermediate point.
       //Set Target
       setXYZ(&fp);
       set_target(&fp);
       //go there.
-      dda_move(getMaxFeedrate());
+      r_move(getMaxFeedrate());
       //go home.
       set_target(&zeros);
-      dda_move(getMaxFeedrate());
+      r_move(getMaxFeedrate());
       break;
+    case 81: // drilling operation
+      temp = zaxis->current_units;
+      //Move only in the XY direction
+      setXYZ(&fp);
+      set_target(&fp);
+      zaxis->target_units = temp;
+      calculate_deltas();
+      r_move(getMaxFeedrate());
+      //Drill DOWN
+      zaxis->target_units = getValue('Z') + ((abs_mode) ? 0 : zaxis->current_units);
+      calculate_deltas();
+      r_move(getMaxFeedrate());
+      //Drill UP
+      zaxis->target_units = temp;
+      calculate_deltas();
+      r_move(getMaxFeedrate());
     case 90://Absolute Positioning
       abs_mode = true;
       break;
@@ -179,6 +181,22 @@ void process_string(uint8_t  *instruction) {
     case 5: // turn off motor
       motor_off();
       break;
+    case 98: //M98 Find Z0 where it is one step from touching.
+      pinMode(15, OUTPUT);
+      digitalWrite(15, LOW); 
+      pinMode(14, INPUT);
+      digitalWrite(14, HIGH);
+      digitalWrite(DIR_Z, HIGH); //move down
+      while(digitalRead(14)) {
+        digitalWrite(STEP_Z, HIGH);
+        digitalWrite(STEP_Z, LOW);
+        delayMicroseconds(250);
+      }
+      //move back one step
+      digitalWrite(DIR_Z, LOW); //move up
+      digitalWrite(STEP_Z, HIGH);
+      digitalWrite(STEP_Z, LOW);
+      break;
     case 99: //M99 S{1,2,4,8,16} -- set stepping mode
       if (command_exists('S')) {
         code = getValue('S');
@@ -195,6 +213,7 @@ void process_string(uint8_t  *instruction) {
   }
   Serial.println("ok");//tell our host we're done.
 }
+
 
 
 
