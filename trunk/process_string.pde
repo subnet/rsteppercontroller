@@ -3,8 +3,8 @@
 
 //steps per inch or mm
 float _units[3] = {
-  X_STEPS_PER_INCH,Y_STEPS_PER_INCH,Z_STEPS_PER_INCH};
-float curve_section = CURVE_SECTION_INCHES;
+  X_STEPS_PER_MM,Y_STEPS_PER_MM,Z_STEPS_PER_MM};
+float curve_section = CURVE_SECTION_MM;
 
 //our feedrate variables.
 float feedrate = 0.0;
@@ -26,6 +26,7 @@ void setXYZ(FloatPoint *fp) {
 //Read the string and execute instructions
 void process_string(uint8_t  *instruction) {
   uint8_t code;
+  uint16_t k;
   float temp;
   //command commands = NULL;
   FloatPoint fp;
@@ -52,14 +53,15 @@ void process_string(uint8_t  *instruction) {
     case 1: //Coordinated Motion
       setXYZ(&fp);
       set_target(&fp);
-      r_move( (command_exists('F')) ? getValue('F') : getMaxFeedrate());
+      if (command_exists('F')) _feedrate = getValue('F'); //feedrate persists till changed.
+      r_move( _feedrate );
       break;
     case 2://Clockwise arc
     case 3://Counterclockwise arc
       FloatPoint cent;
       float angleA, angleB, angle, radius, length, aX, aY, bX, bY;
 
-      //Seet fp Values
+      //Set fp Values
       setXYZ(&fp);
       // Centre coordinates are always relative
       cent.x = xaxis->current_units + getValue('I');
@@ -96,6 +98,7 @@ void process_string(uint8_t  *instruction) {
         step = (code == 3) ? s : steps - s; // Work backwards for CW
         newPoint.x = cent.x + radius * cos(angleA + angle * ((float) step / steps));
         newPoint.y = cent.y + radius * sin(angleA + angle * ((float) step / steps));
+        newPoint.z = zaxis->current_units;
         set_target(&newPoint);
 
         // Need to calculate rate for each section of curve
@@ -107,7 +110,7 @@ void process_string(uint8_t  *instruction) {
 
       break;
     case 4: //Dwell
-      delay((int)getValue('P'));
+      //delay((int)getValue('P'));
       break;
     case 20: //Inches for Units
       _units[0] = X_STEPS_PER_INCH;
@@ -181,21 +184,143 @@ void process_string(uint8_t  *instruction) {
     case 5: // turn off motor
       motor_off();
       break;
-    case 98: //M98 Find Z0 where it is one step from touching.
-      pinMode(15, OUTPUT);
-      digitalWrite(15, LOW); 
-      pinMode(14, INPUT);
-      digitalWrite(14, HIGH);
-      digitalWrite(DIR_Z, HIGH); //move down
-      while(digitalRead(14)) {
-        digitalWrite(STEP_Z, HIGH);
-        digitalWrite(STEP_Z, LOW);
-        delayMicroseconds(250);
+    case 82:
+      DDRC |= _BV(1);
+      PORTC &= ~_BV(1);
+      DDRC &= ~_BV(0);
+      PORTC |= _BV(0);
+      // setup initial position
+      for (int i=0; i<20; i++) {
+        k=0;
+        PORTB |= _BV(5); //go down
+        while(PINC & _BV(0)) {
+          PORTB |= _BV(2);
+          delayMicroseconds(1);
+          PORTB &= ~_BV(2);
+          delayMicroseconds(200);
+          k++;
+        }
+        //print result for this point
+        Serial.println(k,DEC);
+        PORTB &= ~_BV(5);  //move up to origin        
+        while (k--) {
+          PORTB |= _BV(2);
+          delayMicroseconds(1);
+          PORTB &= ~_BV(2);
+          delayMicroseconds(12.5*stepping);
+        }
       }
-      //move back one step
-      digitalWrite(DIR_Z, LOW); //move up
-      digitalWrite(STEP_Z, HIGH);
-      digitalWrite(STEP_Z, LOW);
+      break;
+    case 81:
+      DDRC |= _BV(1);
+      PORTC &= ~_BV(1);
+      DDRC &= ~_BV(0);
+      PORTC |= _BV(0);
+      while(1) {
+        if (PINC & _BV(0)) Serial.println("high");
+        else Serial.println("low");
+      }
+      break;
+    case 80: //plot out surface of milling area
+      DDRC |= _BV(1);
+      PORTC &= ~_BV(1);
+      DDRC &= ~_BV(0);
+      PORTC |= _BV(0);
+      // setup initial position
+      fp.x = 0;
+      fp.y = 0;
+      fp.z = 0;
+      set_target(&fp);
+      set_position(&fp);
+      r_move(0);
+      for (int i=0; i<160; i+=2) {
+        for (float j=0; j<75; j+=2) {
+          fp.x=i;
+          fp.y=j;
+          fp.z=0;
+          set_target( &fp );
+          r_move( 0 );
+          k=0;
+          PORTB &= ~(_BV(5)); //go down
+          while(PINC & _BV(0)) {
+            PORTB |= _BV(2);
+            delayMicroseconds(1);
+            PORTB &= ~_BV(2);
+            delayMicroseconds(200);
+            k++;
+          }
+          //print result for this point
+          Serial.print(i,DEC);
+          Serial.print(",");
+          Serial.print(j,DEC);
+          Serial.print(",");
+          Serial.println(k,DEC);
+          PORTB |= _BV(5);  //move up to origin        
+          while (k--) {
+            PORTB |= _BV(2);
+            delayMicroseconds(1);
+            PORTB &= ~_BV(2);
+            delayMicroseconds(200);
+          }
+        }
+      }
+      break;
+    case 90: //plot out surface of milling area
+      DDRC |= _BV(1);
+      PORTC &= ~_BV(1);
+      DDRC &= ~_BV(0);
+      PORTC |= _BV(0);
+      // setup initial position
+      fp.x = 0;
+      fp.y = 135;
+      fp.z = 0;
+      set_target(&fp);
+      set_position(&fp);
+      r_move(0);
+      for (int i=0; i<1; i++) {
+        for (float j=135; j!=0; j-=.25) {
+          fp.x=i;
+          fp.y=j;
+          fp.z=0;
+          set_target( &fp );
+          r_move( 0 );
+          k=0;
+          PORTB |= _BV(5); //go down
+          while(PINC & _BV(0)) {
+            PORTB |= _BV(2);
+            delayMicroseconds(1);
+            PORTB &= ~_BV(2);
+            delayMicroseconds(200);
+            k++;
+          }
+          //print result for this point
+          Serial.print(i,DEC);
+          Serial.print(",");
+          Serial.print(j,DEC);
+          Serial.print(",");
+          Serial.println(k,DEC);
+          PORTB &= ~_BV(5);  //move up to origin        
+          while (k--) {
+            PORTB |= _BV(2);
+            delayMicroseconds(1);
+            PORTB &= ~_BV(2);
+            delayMicroseconds(200);
+          }
+        }
+      }
+      break;
+    case 98: //M98 Find Z0 where it is one step from touching.
+      DDRC |= _BV(1);
+      PORTC &= ~_BV(1);
+      DDRC &= ~_BV(0);
+      PORTC |= _BV(0);
+      PORTB |= _BV(5);
+      while(PINC & _BV(0)) {
+        PORTB |= _BV(2);
+        delayMicroseconds(1);
+        PORTB &= ~_BV(2);
+        delayMicroseconds(200);
+      }
       break;
     case 99: //M99 S{1,2,4,8,16} -- set stepping mode
       if (command_exists('S')) {
@@ -213,6 +338,16 @@ void process_string(uint8_t  *instruction) {
   }
   Serial.println("ok");//tell our host we're done.
 }
+
+
+
+
+
+
+
+
+
+
 
 
 

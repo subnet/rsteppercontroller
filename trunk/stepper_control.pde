@@ -102,6 +102,8 @@ void fast_move(void) {
  }
  */
 
+
+
 void r_move(float feedrate) {
   uint32_t starttime,duration;
   float distance;
@@ -116,9 +118,7 @@ void r_move(float feedrate) {
     zaxis->timePerStep = (1E6*60.0) / (MAX_Z_FEEDRATE * Z_STEPS_PER_INCH * stepping);
   } 
   else {
-    // do not exceed maximum feedrate
     // if (feedrate > getMaxFeedrate()) feedrate = getMaxFeedrate();
-
     // distance / feedrate * 60000000.0 = move duration in microseconds
     distance = sqrt(xaxis->delta_units*xaxis->delta_units + 
       yaxis->delta_units*yaxis->delta_units + 
@@ -138,11 +138,11 @@ void r_move(float feedrate) {
     }
   }
 
-  starttime = micros();
+  starttime = myMicros();  
   // start move
   while (xaxis->delta_steps || yaxis->delta_steps || zaxis->delta_steps) {
     a = nextEvent();
-    while (micros() < (starttime + a->nextEvent) ); //wait till next action is required
+    while (myMicros() < (starttime + a->nextEvent) ); //wait till next action is required
     if (can_move(a)) {
       _STEP_PORT |= a->direct_step_pin;
       //need to wait 1uS
@@ -206,7 +206,7 @@ void calculate_deltas() {
       digitalWrite(DIR_Y, (a->direction==FORWARD) ? LOW : HIGH); 
       break;
     case 2: 
-      digitalWrite(DIR_Z, (a->direction==FORWARD) ? LOW : HIGH); 
+      digitalWrite(DIR_Z, (a->direction==FORWARD) ? HIGH : LOW); 
       break;
     }
   }

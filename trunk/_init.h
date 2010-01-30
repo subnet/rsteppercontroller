@@ -48,24 +48,25 @@ typedef struct axis_t *axis;
 #define enable_steppers()  digitalWrite(ENABLE, LOW)
 #define intDisable()      ({ uint8_t sreg = SREG; cli(); sreg; })
 #define intRestore(sreg)  SREG = sreg 
+#define myMicros() (micros() >> 3)
 
 //#define X_STEPS_PER_INCH 416.772354
 //#define X_STEPS_PER_MM   16.4083604
 
 // define the parameters of our machine.
-#define X_STEPS_PER_INCH 2000
-#define X_STEPS_PER_MM   78.74015
+#define X_STEPS_PER_INCH 4064.0
+#define X_STEPS_PER_MM   160.0
 
-#define Y_STEPS_PER_INCH 4000
-#define Y_STEPS_PER_MM   157.48031
+#define Y_STEPS_PER_INCH 4064.0
+#define Y_STEPS_PER_MM   160.0
 
-#define Z_STEPS_PER_INCH 2395.2095
-#define Z_STEPS_PER_MM   94.299958
+#define Z_STEPS_PER_INCH 4064.0
+#define Z_STEPS_PER_MM   160.0
 
 //our maximum feedrates
-#define MAX_X_FEEDRATE 25.0
-#define MAX_Y_FEEDRATE 11.0
-#define MAX_Z_FEEDRATE 16.0
+#define MAX_X_FEEDRATE 15.0
+#define MAX_Y_FEEDRATE 15.0
+#define MAX_Z_FEEDRATE 13.0
 
 // Units in curve section
 #define CURVE_SECTION_INCHES 0.019685

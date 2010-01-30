@@ -12,6 +12,7 @@ uint8_t serial_count=0;
 uint16_t no_data = 0;
 uint16_t oldKeys;
 axis axis_array[3];
+float _feedrate;
 
 struct axis_t xaxis_data;
 struct axis_t yaxis_data;
@@ -29,10 +30,14 @@ void setup() {
 //  keypad_init();
   myStepper_init();
   motor_init();
+  _feedrate = getMaxFeedrate();
   
   //reprap init code
   init_steppers();
   init_process_string();
+  //increase clock resolution
+  TCCR0B &= ~_BV(CS00); //for ATmega168!! XXX: this will mess up millis,micros,delay,delayMicroseconds
+ 
   Serial.println("start");
 }
 
