@@ -26,14 +26,12 @@ void setup() {
   //serial
   Serial.begin(9600);
  
-  //my init code
+  //init code
 //  keypad_init();
   myStepper_init();
   motor_init();
-  _feedrate = getMaxFeedrate();
-  
-  //reprap init code
   init_steppers();
+  _feedrate = getMaxFeedrate();
   init_process_string();
   //increase clock resolution
   TCCR0B &= ~_BV(CS00); //for ATmega168!! XXX: this will mess up millis,micros,delay,delayMicroseconds
